@@ -9,6 +9,7 @@ Additionaly, I add a DD or FF flag to signal when work was done for those roles,
 ```
 pip install -r requirements.txt
 ```
+
 2. Set up a `.env` file with these variables:
 ```
 TOGGL_TOKEN=
@@ -19,10 +20,12 @@ JIRA_PASSWORD=
 ```
 You'll need to get your Toggl API token from the account settings.
 Add `JIRA_URL` without a trailing slash.
+
 3. Change this line on `sync_timelogs.py` to set the number of days you want to sync:
 ```
 timelogs = toggl_driver.get_timelogs_last_n_days(1)
 ```
+
 4. Run it:
 ```
 python sync_timelogs.py
