@@ -2,6 +2,9 @@
 import argparse
 import sys
 
+import click
+
+from csv import DictReader
 from datetime import datetime, timedelta, timezone
 from dateutil import parser
 from decouple import config
@@ -23,6 +26,20 @@ def distribute_incomplete(incomplete, complete, logf):
       for target, rate in zip(complete, rates):
          target.time += timelog.time * rate
 
+def log_to_jira(timelogs):
+   # Log time on Jira
+   click.echo("Logging in on Jira... \n")
+   tempo_driver = JiraTempoTimelogsDriver(config('JIRA_URL'))
+   tempo_driver.login(config('JIRA_USER'), config('JIRA_PASSWORD'))
+
+   with click.progressbar(
+      timelogs,
+      label='Logging time entries',
+      item_show_func=lambda item: f"Logging time for {item.ticket}: {item.description}" if item  else ''
+   ) as items:
+      for timelog in items:
+         if not tempo_driver.add_timelog(timelog):
+            click.echo(click.style(f"Unable to log time for {timelog.ticket}", fg='red'))
 
 def update_tempo(timelogs, logf):
    """ Update Jira """
@@ -63,30 +80,52 @@ def get_timelogs(start, end):
    timelogs = toggl_driver.get_timelogs(start, end)
    return timelogs['complete'], timelogs['incomplete']
 
+def print_timelogs(timelogs):
+   click.echo(click.style('Completed Timelogs:', bold=True))
+   for timelog in timelogs['complete']:
+      click.echo(timelog)
+   click.echo(click.style('Incomplete Timelogs:', bold=True))
+   for timelog in timelogs['incomplete']:
+      click.echo(timelog)
 
-if __name__ == '__main__':
-   # Define arguments
-   argp = argparse.ArgumentParser()
-   argp.add_argument('-d', action='store_true', help='Redistribute incomplete on other tickets')
-   argp.add_argument('-n', action='store_true', help='Make no modifications')
-   argp.add_argument('-v', action='store_true', help='Be verbose')
-   argp.add_argument('-s', action='store', default=None, help='Starting date, e.g. 2019-01-01')
-   args = argp.parse_args()
+@click.group()
+@click.option('--dry-run', is_flag=True, help="Display log entries but do not submit")
+@click.option('--verbose', '-v', default=False, help='Be verbose')
+@click.pass_context
+def cli(ctx, dry_run, verbose):
+   ctx.ensure_object(dict)
+   ctx.obj['dry-run'] = dry_run
+   ctx.obj['verbose'] = verbose
+
+
+@cli.command()
+@click.option(
+   '--distrubute', '-d', default=False, help='Redistribute incomplete on other tickets'
+)
+@click.option(
+   '--start-date', '-s', default=None, help='Starting date, e.g. 2019-01-01'
+)
+@click.pass_context
+def toggl(ctx, distribute, start_date):
+
+   dry_run = ctx.obj['dry-run']
+   verbose = ctx.obj['verbose']
 
    # Verbosity, needs work
    logf = lambda x: x
-   if args.v:
+   if verbose:
       logf = print
 
    # Load last saved worklog if not date is supplied
-   if args.s:
-      start = datetime.strptime(args.s, r'%Y-%m-%d')
+   if start_date:
+      start = datetime.strptime(start_date, r'%Y-%m-%d')
    else:
       try:
          with open('.latest') as f:
             start = datetime.fromtimestamp(float(f.read()))
       except:
          print('ERROR: .latest not found, run with "-s YYYY-MM-DD"')
+
    # Set end to last midnight
    end = datetime.now().replace(hour=0, minute=0, second=0)
 
@@ -97,7 +136,7 @@ if __name__ == '__main__':
    grouped = group_timelogs(complete, logf)
 
    # Distribute incomplete
-   if incomplete and args.d:
+   if incomplete and distribute:
       distribute_incomplete(incomplete, grouped, logf)
    elif incomplete:
       print('ERROR:', 'cannot proceed with incomplete timelogs, verify or enable distribute (-d).')
@@ -112,3 +151,44 @@ if __name__ == '__main__':
    if not args.n:
       with open('.latest', 'w') as f:
          f.write(str(end.timestamp()))
+
+@cli.command()
+@click.argument(
+   'file', type=click.File('r')
+)
+@click.pass_context
+def csv(ctx, file):
+   dry_run = ctx.obj['dry-run']
+   reader = DictReader(file)
+   timelogs = list(reader)
+   fields = set(timelogs[0].keys())
+   missing_fields = {'ticket', 'date', 'time', 'description'} - fields
+   if missing_fields:
+      click.echo(f'All fields must be specified in the CSV file. The following fields are missing:')
+      click.echo('\t' + '\n\t'.join(sorted(missing_fields)))
+      ctx.exit()
+   timelog_entries = {
+      'incomplete': list(),
+      'complete': csv_timelog_iter(timelogs),
+   }
+   if dry_run:
+      print_timelogs(timelog_entries)
+   else:
+      log_to_jira(distribute_timelogs(timelog_entries))
+
+
+def csv_timelog_iter(csv_data):
+   for log_entry in csv_data:
+      if log_entry.get('logged', '').lower() in ['yes', 'y', 'true']:
+         continue
+      if not log_entry.get('ticket'):
+         continue
+      yield TimeLogEntry(
+         date=log_entry['date'],
+         description=log_entry['description'],
+         ticket=log_entry['ticket'].upper(),
+         time=log_entry['time'],
+      )
+
+if __name__ == '__main__':
+   cli()
