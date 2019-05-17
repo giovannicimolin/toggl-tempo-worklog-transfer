@@ -25,7 +25,7 @@ class TogglTimesheets:
         if start_date:
             params["start_date"] = start_date
         if end_date:
-            params["start_date"] = end_date
+            params["end_date"] = end_date
 
         # Make request and return
         return self.toggl.request(
@@ -79,6 +79,25 @@ class TogglTimesheets:
 
     def get_timelogs_last_n_days(self, n_days=1):
         raw_logs = self._get_raw_timelogs_last_n_days(n_days)
+
+        result = {
+            'complete': list(),
+            'incomplete': list(),
+        }
+        for item in raw_logs:
+            timelog = self._parse_timelog(item)
+            if timelog.ticket:
+                result['complete'].append(timelog)
+            else:
+                result['incomplete'].append(timelog)
+
+        return result
+
+    def get_timelogs(self, start_date, end_date):
+        start_date_str = start_date.replace(microsecond=0, tzinfo=timezone.utc).isoformat()
+        end_date_str = end_date.replace(microsecond=0, tzinfo=timezone.utc).isoformat()
+
+        raw_logs = self._get_raw_timelogs(start_date=start_date_str, end_date=end_date_str)
 
         result = {
             'complete': list(),

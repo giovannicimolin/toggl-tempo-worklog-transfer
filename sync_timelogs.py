@@ -1,9 +1,10 @@
 import sys
 
 from const import TIMELOG
+from datetime import datetime, timedelta, timezone
 from decouple import config
-from toggl import TogglTimesheets
-from tempo import JiraTempoTimelogsDriver
+from libtoggl import TogglTimesheets
+from libtempo import JiraTempoTimelogsDriver
 
 
 def yes_no_question(msg):
@@ -25,6 +26,12 @@ tempo_driver = JiraTempoTimelogsDriver(config('JIRA_URL'))
 
 # Get timelogs from Toggl
 timelogs = toggl_driver.get_timelogs_last_n_days(1)
+
+# Use this if you want to set a date
+# timelogs = toggl_driver.get_timelogs(
+#     datetime(2019, 5, 17, 0, 0, 0, 0),
+#     datetime(2019, 5, 17, 23, 59, 0, 0)
+# )
 
 if timelogs['incomplete']:
     distribute = yes_no_question("You have timelogs whitout issues. Do you want to distribute the time between your other tickets?")

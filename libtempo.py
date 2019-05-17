@@ -3,8 +3,8 @@ import requests
 
 
 ENDPOINTS = {
-    'login': '/rest/gadget/1.0/login'
-    'worklogs': 'rest/tempo-timesheets/3/worklogs/'
+    'login': '/rest/gadget/1.0/login',
+    'worklogs': '/rest/tempo-timesheets/3/worklogs/'
 }
 
 
