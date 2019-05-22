@@ -25,13 +25,14 @@ toggl_driver = TogglTimesheets(config('TOGGL_TOKEN'))
 tempo_driver = JiraTempoTimelogsDriver(config('JIRA_URL'))
 
 # Get timelogs from Toggl
-timelogs = toggl_driver.get_timelogs_last_n_days(1)
+# timelogs = toggl_driver.get_timelogs_last_n_days(1)
 
 # Use this if you want to set a date
-# timelogs = toggl_driver.get_timelogs(
-#     datetime(2019, 5, 17, 0, 0, 0, 0),
-#     datetime(2019, 5, 17, 23, 59, 0, 0)
-# )
+timelogs = toggl_driver.get_timelogs(
+    datetime(2019, 5, 20, 0, 0, 0, 0),
+    datetime(2019, 5, 20, 23, 59, 0, 0)
+)
+# timelogs['complete'] =  [timelogs['complete'][10]]
 
 if timelogs['incomplete']:
     distribute = yes_no_question("You have timelogs whitout issues. Do you want to distribute the time between your other tickets?")

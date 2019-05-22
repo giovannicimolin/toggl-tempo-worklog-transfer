@@ -1,10 +1,15 @@
 import json
 import requests
 
+from datetime import timedelta
+from parse import search
+from urllib.parse import quote
+
 
 ENDPOINTS = {
     'login': '/rest/gadget/1.0/login',
-    'worklogs': '/rest/tempo-timesheets/3/worklogs/'
+    'worklogs': '/rest/tempo-rest/1.0/worklogs/',
+    'remaining_estimate': '/rest/tempo-rest/1.0/worklogs/remainingEstimate/calculate/',
 }
 
 
@@ -32,8 +37,47 @@ class JiraTempoTimelogsDriver:
 
         self.username = username
 
-    def _format_date(self, date):
-        return date.strftime("%Y-%m-%dT00:00:00.000+0000")
+    @staticmethod
+    def _format_date(date):
+        return date.strftime("%d/%b/%y")
+
+    @staticmethod
+    def _format_time(time):
+        hours, mod = divmod(time.seconds, 3600)
+        minutes, sec = divmod(mod, 60)
+        if sec > 30:
+            minutes += 1
+
+        str = ''
+        if hours:
+            str += '{}h'.format(hours)
+        if minutes:
+            str += '{}m'.format(minutes)
+        return str
+
+    def get_remaining_estimate(self, timelog):
+        """
+        Get remaining estimate from Jira
+        """
+        url_data = '{ticket}/{today}/{today}/{duration}?username={username}'
+        extra_data = url_data.format(
+            ticket=timelog.ticket,
+            today=timelog.date.strftime("%Y-%m-%d"),
+            # Then we have this ugly thing here
+            duration='{}m'.format(int(timelog.time.seconds/60)),
+            username=self.username,
+        )
+
+        # I need to start using proper methods to join urls
+        response = self.session.get(self.get_url('remaining_estimate') + extra_data)
+
+        # Check if answer is good, calculate and return remaining
+        if response.status_code == 200:
+            remaining = response.content.decode('UTF-8')
+            if not remaining:
+                return '0h'
+            return remaining
+        return False
 
     def add_timelog(self, timelog):
         """
@@ -45,24 +89,30 @@ class JiraTempoTimelogsDriver:
             "description": "I did some work"
         }
         """
+
+        remaining_estimate = self.get_remaining_estimate(timelog)
         payload = {
-            "dateStarted": self._format_date(timelog.date),
-            "comment": timelog.description,
-            "issue": {
-              "key": timelog.ticket,
-            },
-            "author":{
-                "name": self.username,
-            },
-            "timeSpentSeconds": timelog.time.seconds
+            'type': 'issue',
+            'actionType': 'logTime',
+            'use-ISO8061-week-numbers': False,
+            'ansidate': timelog.date.strftime('%Y-%m-%d'),
+            'ansienddate': timelog.date.strftime('%Y-%m-%d'),
+            'tracker': False,
+            'issue': 'BB-282',
+            'planning': False,
+            'selectedUser': self.username,
+            'date': self._format_date(timelog.date),
+            'enddate': self._format_date(timelog.date),
+            'time': self._format_time(timelog.time),
+            'remainingEstimate': remaining_estimate,
+            'comment': timelog.description
         }
+
         response = self.session.post(
-            self.get_url('worklogs'),
-            headers={
-                'content-type': 'application/json'
-            },
-            data=json.dumps(payload)
+            self.get_url('worklogs') + timelog.ticket,
+            data=payload
         )
-        if response.status_code == 200:
-            return True
+
+        if 'valid="true"' in response.content.decode('UTF-8'):
+             return True
         return False
