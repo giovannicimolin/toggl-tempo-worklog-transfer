@@ -1,24 +1,8 @@
-import sys
+from datetime import datetime
 
-from const import TIMELOG
-from datetime import datetime, timedelta, timezone
 from decouple import config
 from libtoggl import TogglTimesheets
 from libtempo import JiraTempoTimelogsDriver
-
-
-def yes_no_question(msg):
-    # raw_input returns the empty string for "enter"
-    yes = {'yes','y', 'ye', ''}
-    no = {'no','n'}
-
-    choice = raw_input(msg).lower()
-    if choice in yes:
-       return True
-    elif choice in no:
-       return False
-    else:
-       sys.stdout.write("Please respond with 'yes' or 'no'")
 
 
 toggl_driver = TogglTimesheets(config('TOGGL_TOKEN'))
@@ -32,13 +16,6 @@ timelogs = toggl_driver.get_timelogs(
     datetime(2019, 5, 20, 0, 0, 0, 0),
     datetime(2019, 5, 20, 23, 59, 0, 0)
 )
-# timelogs['complete'] =  [timelogs['complete'][10]]
-
-if timelogs['incomplete']:
-    distribute = yes_no_question("You have timelogs whitout issues. Do you want to distribute the time between your other tickets?")
-    if distribute:
-        # todo
-        pass
 
 # Log time on Jira
 print("Logging in on Jira... \n\n")

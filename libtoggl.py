@@ -1,11 +1,8 @@
 import re
-
-from const import TIMELOG
-from decouple import config
-from requests.models import PreparedRequest
-from toggl.TogglPy import Toggl, Endpoints
-from urllib.parse import urlencode
 from datetime import datetime, timedelta, timezone
+
+from toggl.TogglPy import Endpoints, Toggl
+from const import TIMELOG
 
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S+00:00"
@@ -51,7 +48,7 @@ class TogglTimesheets:
         """
         if raw.get('duronly', False):
             print(raw)
-            raise("Error, timelog with duronly = true")
+            raise "Error, timelog with duronly = true"
 
         tags = raw['tags']
         ticket = None

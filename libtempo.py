@@ -1,10 +1,6 @@
 import json
 import requests
 
-from datetime import timedelta
-from parse import search
-from urllib.parse import quote
-
 
 ENDPOINTS = {
     'login': '/rest/gadget/1.0/login',
@@ -33,7 +29,7 @@ class JiraTempoTimelogsDriver:
         # print the html returned or something more intelligent to see if it's a successful login page.
         response = json.loads(request.text)
         if not response.get("loginSucceeded"):
-            raise("Failed to log in.")
+            raise "Failed to log in."
 
         self.username = username
 
@@ -48,12 +44,12 @@ class JiraTempoTimelogsDriver:
         if sec > 30:
             minutes += 1
 
-        str = ''
+        output = ''
         if hours:
-            str += '{}h'.format(hours)
+            output += '{}h'.format(hours)
         if minutes:
-            str += '{}m'.format(minutes)
-        return str
+            output += '{}m'.format(minutes)
+        return output
 
     def get_remaining_estimate(self, timelog):
         """
@@ -114,5 +110,5 @@ class JiraTempoTimelogsDriver:
         )
 
         if 'valid="true"' in response.content.decode('UTF-8'):
-             return True
+            return True
         return False
