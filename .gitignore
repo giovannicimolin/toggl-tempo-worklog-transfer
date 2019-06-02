@@ -5,3 +5,5 @@
 venv
 
 .magicindex.json
+
+.latest
