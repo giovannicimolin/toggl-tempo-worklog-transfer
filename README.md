@@ -34,3 +34,9 @@ python sync_timelogs.py
 ## Warning
 This is still on early work, so if it hits any error, it'll probably stop.
 Make sure you check you timelogs for the correct format before syncing.
+
+## Contributors
+Thanks for everyone who contributed with this and helped make it better!
+
+- @viadanna for polishing the code and taking care of all my todos
+- @xitij2000 for a draft PR showing how to add additional functionalities
