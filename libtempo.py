@@ -48,7 +48,7 @@ class JiraTempoTimelogsDriver:
         if hours:
             output += '{}h'.format(hours)
         if minutes:
-            output += '{}m'.format(minutes)
+            output += ' {}m'.format(minutes)
         return output
 
     def get_remaining_estimate(self, timelog):
