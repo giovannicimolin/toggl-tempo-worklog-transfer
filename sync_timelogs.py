@@ -36,8 +36,8 @@ def update_tempo(timelogs, logf):
          continue
       if not tempo_driver.add_timelog(timelog):
          print("Unable to log time for {}".format(timelog.ticket))
-         return parser.parse(timelog.start).timestamp()
-
+         # TODO: This will fail, fix
+         return parser.parse(timelog.date).timestamp()
 
 def group_timelogs(timelogs, logf):
    """ Group multiple timelogs with same ticket, description and date """
