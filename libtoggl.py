@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S+00:00"
 ISSUE_REGEX = re.compile(r'[A-Z]{2,7}-\d{1,6}')
-TOGGL_API_BASE_URL = "https://www.toggl.com/api/v8/"
+TOGGL_API_BASE_URL = "https://api.track.toggl.com/api/v8/"
 TOGGL_TIMELOGS_URL = TOGGL_API_BASE_URL + "time_entries"
 
 
