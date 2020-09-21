@@ -2,6 +2,7 @@
 import argparse
 import sys
 
+import click
 from datetime import datetime, timedelta, timezone
 from dateutil import parser
 from decouple import config
@@ -32,8 +33,6 @@ def update_tempo(timelogs, logf):
    for timelog in grouped:
       logf("Logging time for {}: {} ({}) ({})".format(
          timelog.ticket, timelog.description, timelog.date, timelog.time))
-      if args.n:
-         continue
       if not tempo_driver.add_timelog(timelog):
          print("Unable to log time for {}".format(timelog.ticket))
          # TODO: This will fail, fix
@@ -108,11 +107,11 @@ if __name__ == '__main__':
       sys.exit(1)
 
    # This will update Tempo
-   last = update_tempo(grouped, logf)
-   if last:
-      # Stopped before everything was processed
-      end = last
+   if not args.n and click.confirm('\nDo you want to upload these worklogs to Tempo?', default=False):
+      last = update_tempo(grouped, logf)
+      if last:
+         # Stopped before everything was processed
+         end = last
 
-   if not args.n:
       with open('.latest', 'w') as f:
          f.write(str(end.timestamp()))
