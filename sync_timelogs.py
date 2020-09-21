@@ -71,6 +71,7 @@ if __name__ == '__main__':
    argp.add_argument('-n', action='store_true', help='Make no modifications')
    argp.add_argument('-v', action='store_true', help='Be verbose')
    argp.add_argument('-s', action='store', default=None, help='Starting date, e.g. 2019-01-01')
+   argp.add_argument('-e', action='store', default=None, help='End date, e.g. 2019-01-01')
    args = argp.parse_args()
 
    # Verbosity, needs work
@@ -87,8 +88,11 @@ if __name__ == '__main__':
             start = datetime.fromtimestamp(float(f.read()))
       except:
          print('ERROR: .latest not found, run with "-s YYYY-MM-DD"')
-   # Set end to last midnight
-   end = datetime.now().replace(hour=0, minute=0, second=0)
+   if args.e:
+      end = datetime.strptime(args.e, r'%Y-%m-%d')
+   else:
+      # Set end to last midnight
+      end = datetime.now().replace(hour=0, minute=0, second=0)
 
    # Fetch complete and incomplete timelogs
    complete, incomplete = get_timelogs(start, end)
