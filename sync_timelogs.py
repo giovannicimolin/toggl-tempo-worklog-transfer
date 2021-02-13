@@ -2,6 +2,7 @@
 import argparse
 import sys
 
+import click
 from datetime import datetime, timedelta, timezone
 from dateutil import parser
 from decouple import config
@@ -32,8 +33,6 @@ def update_tempo(timelogs, logf):
    for timelog in grouped:
       logf("Logging time for {}: {} ({}) ({})".format(
          timelog.ticket, timelog.description, timelog.date, timelog.time))
-      if args.n:
-         continue
       if not tempo_driver.add_timelog(timelog):
          print("Unable to log time for {}".format(timelog.ticket))
          # TODO: This will fail, fix
@@ -71,6 +70,7 @@ if __name__ == '__main__':
    argp.add_argument('-n', action='store_true', help='Make no modifications')
    argp.add_argument('-v', action='store_true', help='Be verbose')
    argp.add_argument('-s', action='store', default=None, help='Starting date, e.g. 2019-01-01')
+   argp.add_argument('-e', action='store', default=None, help='End date, e.g. 2019-01-01')
    args = argp.parse_args()
 
    # Verbosity, needs work
@@ -87,8 +87,11 @@ if __name__ == '__main__':
             start = datetime.fromtimestamp(float(f.read()))
       except:
          print('ERROR: .latest not found, run with "-s YYYY-MM-DD"')
-   # Set end to last midnight
-   end = datetime.now().replace(hour=0, minute=0, second=0)
+   if args.e:
+      end = datetime.strptime(args.e, r'%Y-%m-%d')
+   else:
+      # Set end to last midnight
+      end = datetime.now().replace(hour=0, minute=0, second=0)
 
    # Fetch complete and incomplete timelogs
    complete, incomplete = get_timelogs(start, end)
@@ -104,11 +107,11 @@ if __name__ == '__main__':
       sys.exit(1)
 
    # This will update Tempo
-   last = update_tempo(grouped, logf)
-   if last:
-      # Stopped before everything was processed
-      end = last
+   if not args.n and click.confirm('\nDo you want to upload these worklogs to Tempo?', default=False):
+      last = update_tempo(grouped, logf)
+      if last:
+         # Stopped before everything was processed
+         end = last
 
-   if not args.n:
       with open('.latest', 'w') as f:
          f.write(str(end.timestamp()))
