@@ -78,7 +78,8 @@ class TogglTimesheets:
             if possible:
                 # TODO Dividing to multiple tickets
                 ticket = possible[0]
-                raw["description"] = raw["description"].strip(ticket).strip()
+                desc = re.sub(r'\[?%s\]?' % ticket, '', raw["description"])
+                raw["description"] = desc.strip()
 
         if "description" not in raw:
             # Shouldn't exist, but alas
