@@ -10,5 +10,5 @@ six==1.15.0
 TogglPy==0.1.1
 traitlets==4.3.2
 typed-ast==1.4.1
-urllib3==1.24.3
+urllib3==1.26.5
 black==20.8b1
