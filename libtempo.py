@@ -107,7 +107,11 @@ class JiraTempoTimelogsDriver:
         response = self.session.post(
             self.get_url("worklogs") + timelog.ticket, data=payload
         )
+        response_details = response.content.decode("UTF-8")
 
-        if 'valid="true"' in response.content.decode("UTF-8"):
+        if 'valid="true"' in response_details:
             return True
-        return False
+        else:
+            raise RuntimeError(
+                f"Unable to log time entry on {timelog.ticket} - see response from tempo: \n {response_details}"
+            )
