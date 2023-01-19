@@ -56,12 +56,10 @@ class TogglTimesheets:
             'stop': '2019-05-11T12:40:27+00:00',
             'description': 'Trying to deploy mongodb',
             'tags': ['BB-1212'],
-            'duronly': False,
+            # this field is deprecated for GET endpoints and always true
+            'duronly': True,
         }
         """
-        if raw.get("duronly", False):
-            raise ("Error, timelog with duronly = true")
-
         tags = raw.get("tags", [])
         ticket = None
         dd = False
